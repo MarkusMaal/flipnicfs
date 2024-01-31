@@ -7,6 +7,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.FileChooser;
 
@@ -44,22 +46,44 @@ public class MainView {
 
     }
 
-    @SuppressWarnings("unchecked")
     @FXML
     private void ClickItem(MouseEvent click) {
+        if (click.getClickCount() == 2) {
+            DoubleClickItem();
+        } else {
+            CycleItem();
+        }
+    }
+
+    @FXML
+    private void SelectItem(KeyEvent key) {
+        if (key.getCode() == KeyCode.ENTER) {
+            DoubleClickItem();
+        } else {
+            CycleItem();
+        }
+    }
+
+    private void DoubleClickItem() {
         String sel = this.fileBrowser.getSelectionModel().getSelectedItem();
-        if (click.getClickCount() == 2 && !this.fileBrowser.getSelectionModel().getSelectedIndices().isEmpty() && sel.endsWith("\\")) {
+        if (!this.fileBrowser.getSelectionModel().getSelectedIndices().isEmpty() && sel.endsWith("\\")) {
             this.files.clear();
             this.files.addAll(mainApp.ffs.GetFolderTOC(sel));
             this.fileBrowser.setItems(this.files);
             locationLabel.setText("Path: \\" + sel);
             workingDir = "\\" + sel;
-        } else {
-            String labelText = "Path: " + workingDir + sel + "\n" +
-                    String.format("Size: %s", mainApp.ffs.GetNiceSize(workingDir.equals("\\") ? mainApp.ffs.GetSize(sel) : mainApp.ffs.GetFolderFileSize(sel, workingDir.substring(1))));
-            locationLabel.setText(labelText);
-            sepStreamButton.setDisable(!sel.endsWith(".PSS"));
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void CycleItem() {
+        String sel = this.fileBrowser.getSelectionModel().getSelectedItem();
+        String labelText = "Path: " + workingDir + sel + "\n" +
+                String.format("Size: %s", mainApp.ffs.GetNiceSize(workingDir.equals("\\") ? mainApp.ffs.GetSize(sel) : mainApp.ffs.GetFolderFileSize(sel, workingDir.substring(1))));
+        labelText += "\nOffset: " + (workingDir.equals("\\") ? mainApp.ffs.GetRootOffset(sel) : mainApp.ffs.GetFolderOffset(sel, workingDir.substring(1)));
+        labelText += "\nType: " + mainApp.ffs.GetNiceFileType(sel);
+        locationLabel.setText(labelText);
+        sepStreamButton.setDisable(!sel.endsWith(".PSS"));
     }
 
     @FXML
@@ -69,6 +93,12 @@ public class MainView {
         this.fileBrowser.setItems(this.files);
         locationLabel.setText("Path: \\");
         workingDir = "\\";
+    }
+
+    private void ReloadFolder() {
+        this.files.clear();
+        this.files.addAll(mainApp.ffs.GetFolderTOC(workingDir.substring(1)));
+        this.fileBrowser.setItems(this.files);
     }
 
     @FXML
@@ -98,7 +128,20 @@ public class MainView {
                 new FileChooser.ExtensionFilter("Flipnic BIN files", "*.bin", "*.BIN")
         );
         File binfile = fileChooser.showOpenDialog(this.mainApp.primaryStage);
-        mainApp.ffs = new FlipnicFilesystem("/internal_storage/FE107DD3107D937F/Romid/PS2/DVD/SCPS_150.50.Flipnic (JP)/RES.BIN");
+        mainApp.ffs = new FlipnicFilesystem(binfile.getAbsolutePath());
         this.Reload();
+    }
+
+    @FXML
+    private void RenameFile() {
+        String sel = this.fileBrowser.getSelectionModel().getSelectedItem();
+        String newName = mainApp.showInputBox("Current name: " + sel);
+        if (this.workingDir.equals("\\")) {
+            mainApp.ffs.RenameRootFile(sel, newName);
+            ReloadRoot();
+        } else {
+            mainApp.ffs.RenameFolderFile(sel, newName, workingDir.substring(1));
+            ReloadFolder();
+        }
     }
 }
