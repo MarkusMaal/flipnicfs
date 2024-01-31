@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ee.mt.flipnicexplorer.MainView">
+   <children>
+      <ListView fx:id="fileBrowser" layoutX="14.0" layoutY="14.0" onMouseClicked="#ClickItem" prefHeight="377.0" prefWidth="451.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="135.0" AnchorPane.topAnchor="10.0" />
+      <FlowPane layoutX="386.0" layoutY="11.0" prefHeight="390.0" prefWidth="117.0" vgap="10.0" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
+         <children>
+             <Button mnemonicParsing="false" onAction="#OpenBin" prefHeight="24.0" prefWidth="113.0" text="Open BIN" />
+             <Button mnemonicParsing="false" prefHeight="24.0" prefWidth="113.0" text="Save BIN" />
+            <Button mnemonicParsing="false" prefHeight="24.0" prefWidth="113.0" text="Extract all" />
+            <Button mnemonicParsing="false" onAction="#SaveFile" prefHeight="24.0" prefWidth="113.0" text="Extract file" />
+            <Button mnemonicParsing="false" prefHeight="24.0" prefWidth="113.0" text="Rename" />
+            <Button mnemonicParsing="false" prefHeight="24.0" prefWidth="113.0" text="Replace" />
+            <Button fx:id="sepStreamButton" disable="true" mnemonicParsing="false" prefHeight="24.0" prefWidth="113.0" text="Sep. streams" />
+            <Button mnemonicParsing="false" onAction="#ReloadRoot" prefHeight="24.0" prefWidth="113.0" text="Root" />
+            <Label fx:id="locationLabel" alignment="TOP_LEFT" prefHeight="106.0" prefWidth="110.0" text="Path: \" wrapText="true">
+               <FlowPane.margin>
+                  <Insets left="2.0" top="1.0" />
+               </FlowPane.margin>
+            </Label>
+         </children>
+      </FlowPane>
+   </children>
+</AnchorPane>
