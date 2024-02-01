@@ -1,9 +1,8 @@
 package ee.mt.flipnicexplorer;
 
-import javafx.animation.KeyValue;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -17,8 +16,10 @@ public class FlipnicFilesystem {
     byte[] memory;
     long streamStart = 0;
     long endOfFile = 0;
+    String blobPath;
     public FlipnicFilesystem(String filePath) throws IOException {
         this.LoadFiles(filePath);
+        this.blobPath = filePath;
     }
 
     private byte[] ReadData(Long start, int length) {
@@ -243,6 +244,45 @@ public class FlipnicFilesystem {
         for (long idx = offset; idx < offset + data.length; idx++) {
             this.memory[(int) idx] = data[(int) (idx - offset)];
         }
+    }
+
+    public List<List<Byte>> GetStreams(String filename) {
+        byte[] pssFile = GetFile(filename);
+        // we erase memory to avoid out of memory errors during extraction
+        this.memory = null;
+        ArrayList<List<Byte>> audioStreams = new ArrayList<>();
+        ArrayList<Byte> videoStream = new ArrayList<>();
+        boolean exit = false;
+        int end;
+        int i = 0;
+        while (!exit) {
+            String identify = String.valueOf((char) pssFile[i]) + (char) pssFile[i + 1] + (char) pssFile[i + 2];
+            int bufLastFour = (pssFile[i+0x8] & 0xFF) + (pssFile[i+0x9] & 0xFF) * 0x100 + (pssFile[i+0xA] & 0xFF) * 0x10000 + (pssFile[i+0xB] & 0xFF) * 1000000;
+            int next = (pssFile[i+0xC] & 0xFF) + (pssFile[i+0xD] & 0xFF) * 0x100 + (pssFile[i+0xE] & 0xFF) * 0x10000 + (pssFile[i+0xF] & 0xFF) * 1000000;
+            switch (identify) {
+                case "IPU":
+                    end = bufLastFour + i;
+                    videoStream.addAll(Arrays.asList(ArrayUtils.toObject(Arrays.copyOfRange(pssFile, i+16, end + 0x10))));
+                    break;
+                case "INT":
+                    end = bufLastFour + i;
+                    int id = pssFile[i+4];
+                    if (audioStreams.size() < id) {
+                        audioStreams.add(new ArrayList<>());
+                    }
+                    audioStreams.get(id-1).addAll(Arrays.asList(ArrayUtils.toObject(Arrays.copyOfRange(pssFile, i+16, end + 0x10))));
+                    break;
+                case "END":
+                    exit = true;
+                    break;
+            }
+            i += next + 0x10;
+            if (i >= pssFile.length) {
+                exit = true;
+            }
+        }
+        audioStreams.add(videoStream);
+        return audioStreams;
     }
 
     public String GetNiceFileType(String fileName) {
