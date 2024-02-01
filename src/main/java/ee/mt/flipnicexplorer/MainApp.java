@@ -14,6 +14,8 @@ import java.util.HashMap;
 public class MainApp extends Application {
     public Stage primaryStage;
     public FlipnicFilesystem ffs;
+    public String progress = "";
+    public final String waitText = "Please wait...";
 
     public MainApp() throws IOException {
     }

@@ -23,7 +23,7 @@
                                  <children>
                                      <Button mnemonicParsing="false" onAction="#OpenBin" prefHeight="24.0" prefWidth="113.0" text="Open BIN" />
                                      <Button fx:id="saveBinButton" disable="true" mnemonicParsing="false" prefHeight="24.0" prefWidth="113.0" text="Save BIN" />
-                                    <Button fx:id="extractAllButton" disable="true" mnemonicParsing="false" prefHeight="24.0" prefWidth="113.0" text="Extract all" />
+                                    <Button fx:id="extractAllButton" disable="true" mnemonicParsing="false" onAction="#ExtractAll" prefHeight="24.0" prefWidth="113.0" text="Extract all" />
                                     <Button fx:id="extractFileButton" disable="true" mnemonicParsing="false" onAction="#SaveFile" prefHeight="24.0" prefWidth="113.0" text="Extract file" />
                                     <Button fx:id="renameButton" disable="true" mnemonicParsing="false" onAction="#RenameFile" prefHeight="24.0" prefWidth="113.0" text="Rename" />
                                     <Button fx:id="replaceButton" disable="true" mnemonicParsing="false" prefHeight="24.0" prefWidth="113.0" text="Replace" />

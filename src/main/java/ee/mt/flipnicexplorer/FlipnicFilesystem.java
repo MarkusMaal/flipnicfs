@@ -12,7 +12,7 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 public class FlipnicFilesystem {
-    HashMap<String, Long> fileTable = new LinkedHashMap<String, Long>();
+    HashMap<String, Long> fileTable = new LinkedHashMap<>();
     byte[] memory;
     long streamStart = 0;
     long endOfFile = 0;
@@ -25,7 +25,7 @@ public class FlipnicFilesystem {
     private byte[] ReadData(Long start, int length) {
         byte[] returnData = new byte[length];
         for (Long i = start; i < start + length; i++) {
-            returnData[(int)(i - start)] = this.memory[Integer.valueOf(Math.toIntExact(i))];
+            returnData[(int)(i - start)] = this.memory[Math.toIntExact(i)];
         }
         return returnData;
     }
@@ -42,7 +42,7 @@ public class FlipnicFilesystem {
             if (l.equals(start)) {
                 nextValue = true;
             } else if (nextValue) {
-                length = (int) (l - (int)Integer.valueOf(Math.toIntExact(start)));
+                length = (int) (l - Math.toIntExact(start));
                 break;
             }
         }
@@ -65,12 +65,13 @@ public class FlipnicFilesystem {
         }
     }
 
-    public void SaveFileOnFolder(String folder, String ffsFile, String outputFile) throws IOException {
+    @SafeVarargs
+    public final void SaveFileOnFolder(String folder, String ffsFile, String outputFile, HashMap<String, Long>... hashMap) throws IOException {
         if (folder.startsWith("\\")) {
             folder = folder.substring(1);
         }
         byte[] folderData = GetFile(folder);
-        HashMap<String, Long> folderFiles = GetFolderTOCbyData(folderData);
+        HashMap<String, Long> folderFiles = (hashMap.length > 0 ? hashMap[0] : GetFolderTOCbyData(folderData));
         Long startIdx = 0L;
         int length = 0;
         boolean foundFile = false;
@@ -84,14 +85,17 @@ public class FlipnicFilesystem {
                 foundFile = true;
             }
         }
+        if (length == 0) {
+            length = (int) (folderData.length - startIdx);
+        }
         byte[] folderFile = Arrays.copyOfRange(folderData, Math.toIntExact(startIdx), (int) (startIdx + length));
         File output = new File(outputFile);
-        try (FileOutputStream outputStream = new FileOutputStream(output)) {
-            outputStream.write(folderFile);
-        }
+        FileOutputStream outputStream = new FileOutputStream(output, true);
+        outputStream.write(folderFile);
     }
 
-    public Long GetSize(String fileName, HashMap<String, Long>... fileList) {
+    @SafeVarargs
+    public final Long GetSize(String fileName, HashMap<String, Long>... fileList) {
         HashMap<String, Long> files = fileList.length > 0 ? fileList[0] : this.fileTable;
         Long start = 0L;
         boolean fileFound = false;
@@ -107,7 +111,6 @@ public class FlipnicFilesystem {
         return this.endOfFile - start;
     }
 
-    @SuppressWarnings("unchecked")
     public Long GetFolderFileSize(String fileName, String folderName) {
         return GetSize(fileName, GetFolderTOCbyData(GetFile(folderName)));
     }
@@ -126,14 +129,10 @@ public class FlipnicFilesystem {
                 entryStr.append((char)b);
             }
             long addr = (buffer[0x3C] & 0xFF) + 0x100L * (buffer[0x3D] & 0xFF) + 0x10000L * (buffer[0x3E] & 0xFF) + 0x1000000L * (buffer[0x3F] & 0xFF);
-            switch (entryStr.toString()) {
-                case "*End Of Mem Data":
-                    eof = addr;
-                    break;
-                default:
-                    //System.out.println(entryStr + " at " + addr);
-                    returnData.put(entryStr.toString(), addr);
-                    break;
+            if (entryStr.toString().equals("*End Of Mem Data")) {
+                eof = addr;
+            } else {
+                returnData.put(entryStr.toString(), addr);
             }
             if (eof > 0) {
                 break;

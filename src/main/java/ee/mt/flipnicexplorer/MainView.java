@@ -1,8 +1,10 @@
 package ee.mt.flipnicexplorer;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -12,13 +14,18 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.FlowPane;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -53,6 +60,7 @@ public class MainView {
     MainApp mainApp;
 
     String workingDir = "\\";
+
 
     public void setMainApp(MainApp mainApp) {
         this.mainApp = mainApp;
@@ -157,14 +165,29 @@ public class MainView {
         );
         File binfile = fileChooser.showOpenDialog(this.mainApp.primaryStage);
         if (binfile != null) {
-            mainApp.ffs = new FlipnicFilesystem(binfile.getAbsolutePath());
-            this.Reload();
+            fileBrowser.setDisable(true);
+            actionFlow.setDisable(true);
+            locationLabel.setText(this.mainApp.waitText);
+            LoadFileTask lft = getLoadFileTask(binfile);
+            ExecutorService executorService = Executors.newFixedThreadPool(1);
+            executorService.execute(lft);
+        }
+    }
+
+    private LoadFileTask getLoadFileTask(File binfile) throws IOException {
+        LoadFileTask lft = new LoadFileTask(binfile.getAbsolutePath(), this.mainApp);
+        lft.setOnSucceeded(event -> {
+            mainApp.ffs = lft.getValue();
             extractFileButton.setDisable(false);
+            extractAllButton.setDisable(false);
             renameButton.setDisable(false);
             rootButton.setDisable(false);
             fileBrowser.setDisable(false);
+            actionFlow.setDisable(false);
+            this.Reload();
             locationLabel.setText("Path: \\");
-        }
+        });
+        return lft;
     }
 
     @FXML
@@ -181,7 +204,41 @@ public class MainView {
     }
 
     @FXML
-    private void SeparateStreams() throws IOException {
+    private void ExtractAll() throws IOException {
+        actionFlow.setDisable(true);
+        fileBrowser.setDisable(true);
+        locationLabel.setText(this.mainApp.waitText);
+        DirectoryChooser ds = new DirectoryChooser();
+        ds.setTitle("Choose output directory");
+        File outFolder = ds.showDialog(this.mainApp.primaryStage);
+        if (outFolder == null) {return;}
+        ExtractAllTask eat = getExtractAllTask(outFolder);
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        executorService.execute(eat);
+    }
+
+    private ExtractAllTask getExtractAllTask(File outFolder) {
+        ExtractAllTask eat = new ExtractAllTask(this.mainApp.ffs, outFolder.getAbsolutePath(), this.mainApp);
+        Timer timer = new Timer();
+        eat.setOnRunning(event -> {
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    Platform.runLater(() -> locationLabel.setText(mainApp.waitText + "\n" + mainApp.progress));
+                }
+            }, 50, 100);
+        });
+        eat.setOnSucceeded(event -> {
+            timer.cancel();
+            actionFlow.setDisable(false);
+            fileBrowser.setDisable(false);
+            this.ReloadRoot();
+        });
+        return eat;
+    }
+
+    @FXML
+    private void SeparateStreams() {
         String sel = this.fileBrowser.getSelectionModel().getSelectedItem();
         actionFlow.setDisable(true);
         fileBrowser.setDisable(true);
@@ -231,7 +288,7 @@ public class MainView {
         executorService.execute(strmTsk);
     }
 
-    public class SeparateStreamsTask extends Task<List<List<Byte>>> {
+    public static class SeparateStreamsTask extends Task<List<List<Byte>>> {
         final FlipnicFilesystem ffs;
         final String fileName;
         public SeparateStreamsTask(FlipnicFilesystem ffs, String fileName) {
@@ -243,5 +300,70 @@ public class MainView {
         protected List<List<Byte>> call() throws Exception {
             return this.ffs.GetStreams(this.fileName);
         }
+    }
+
+    public static class LoadFileTask extends Task<FlipnicFilesystem> {
+        String fileName;
+        public LoadFileTask(String fileName, MainApp mainApp) throws IOException {
+            this.fileName = fileName;
+        }
+
+        @Override
+        protected FlipnicFilesystem call() throws Exception {
+            return new FlipnicFilesystem(fileName);
+        }
+    }
+
+    public static class ExtractAllTask extends Task<Boolean> {
+        final FlipnicFilesystem ffs;
+        final String outputFolder;
+
+        final String dirSeparator;
+
+        private String currentFile;
+
+        MainApp mainApp;
+
+        public ExtractAllTask(FlipnicFilesystem ffs, String outputFolder, MainApp mainApp) {
+            this.ffs = ffs;
+            this.outputFolder = outputFolder;
+            this.currentFile = "";
+            this.mainApp = mainApp;
+            if (System.getProperty("os.name").startsWith("Windows")) {
+                this.dirSeparator = "\\";
+            } else {
+                this.dirSeparator = "/";
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        protected Boolean call() throws Exception {
+            for (String fileName: this.ffs.GetRootTOC()) {
+                this.currentFile = fileName + " (" + this.ffs.GetNiceSize(this.ffs.GetSize(fileName)) + ")";
+                this.mainApp.progress = this.currentFile;
+                if (!fileName.endsWith("\\")) {
+                    if (fileName.endsWith(".SCC")) {
+                        System.out.println("Warning: Skipping " + fileName);
+                        continue;
+                    }
+                    this.ffs.SaveFile(fileName, this.outputFolder + this.dirSeparator + fileName.replace("\\", this.dirSeparator));
+                } else {
+                    Files.createDirectory(Path.of(this.outputFolder + this.dirSeparator + fileName.replace("\\", "")));
+                    HashMap<String, Long> toc = this.ffs.GetFolderTOCbyData(this.ffs.GetFile(fileName));
+                    for (String folderFiles : toc.keySet()) {
+                        if (folderFiles.endsWith(".SCC")) {
+                            System.out.println("Warning: Skipping " + fileName + folderFiles);
+                            continue;
+                        }
+                        this.currentFile = fileName + folderFiles + " (" + this.ffs.GetNiceSize(toc.get(folderFiles)) + ")";
+                        this.mainApp.progress = this.currentFile;
+                        this.ffs.SaveFileOnFolder(fileName, folderFiles, this.outputFolder + this.dirSeparator + fileName.replace("\\", this.dirSeparator) + folderFiles, toc);
+                    }
+                }
+            }
+            return false;
+        }
+
     }
 }
