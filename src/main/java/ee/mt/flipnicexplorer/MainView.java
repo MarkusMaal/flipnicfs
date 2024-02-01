@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Timer;
@@ -415,7 +416,7 @@ public class MainView {
                     }
                     this.ffs.SaveFile(fileName, this.outputFolder + this.dirSeparator + fileName.replace("\\", this.dirSeparator));
                 } else {
-                    Files.createDirectory(Path.of(this.outputFolder + this.dirSeparator + fileName.replace("\\", "")));
+                    Files.createDirectory(Paths.get(this.outputFolder + this.dirSeparator + fileName.replace("\\", "")));
                     HashMap<String, Long> toc = this.ffs.GetFolderTOCbyData(this.ffs.GetFile(fileName));
                     for (String folderFiles : toc.keySet()) {
                         if (folderFiles.endsWith(".SCC")) {

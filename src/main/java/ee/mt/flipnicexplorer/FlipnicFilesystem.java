@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.*;
 
@@ -142,7 +143,7 @@ public class FlipnicFilesystem {
     }
 
     private void LoadFiles(String filePath) throws IOException {
-        this.memory = Files.readAllBytes(Path.of(filePath));
+        this.memory = Files.readAllBytes(Paths.get(filePath));
         this.InitTOC();
     }
 
