@@ -174,6 +174,70 @@ public class MainView {
         }
     }
 
+    @FXML
+    private void SaveBin() throws IOException {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save BIN file");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Flipnic BIN files", "*.bin", "*.BIN")
+        );
+        File binfile = fileChooser.showSaveDialog(this.mainApp.primaryStage);
+        mainApp.ffs.ExportBin(binfile);
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("FlipnicFS");
+        alert.setHeaderText("Success");
+        alert.setContentText("The file has been exported successfully!");
+        alert.showAndWait();
+    }
+    @FXML
+    private void ReplaceFile() throws IOException {
+        String sel = this.fileBrowser.getSelectionModel().getSelectedItem();
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setHeaderText("Error");
+        alert.setTitle("FlipnicFS");
+        if (sel.endsWith("\\")) {
+            alert.setContentText("This program can only replace individual files");
+            alert.showAndWait();
+        }
+        String ext = sel.split("\\.")[1];
+        if (ext.equals("SCC")) {
+            alert.setContentText("This type of file cannot be replaced");
+            alert.showAndWait();
+        }
+        String desc = this.mainApp.ffs.GetNiceFileType(sel);
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Choose replacement file");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter(desc, "*." + ext),
+                new FileChooser.ExtensionFilter("Any file (risky)", "*.*")
+        );
+        fileChooser.setInitialFileName(sel);
+        File repfile = fileChooser.showOpenDialog(this.mainApp.primaryStage);
+        if (repfile != null) {
+            if (workingDir.equals("\\")) {
+                if (!mainApp.ffs.OverwriteFile(sel, repfile)) {
+                    alert.setContentText("Original file is smaller than replacement file!");
+                    alert.showAndWait();
+                } else {
+                    alert.setAlertType(Alert.AlertType.INFORMATION);
+                    alert.setHeaderText("Success");
+                    alert.setContentText("The file has been replaced successfully!");
+                    alert.showAndWait();
+                }
+            } else {
+                if (!mainApp.ffs.OverwriteFolderFile(sel, workingDir.substring(1), repfile)) {
+                    alert.setContentText("Original file is smaller than replacement file!");
+                    alert.showAndWait();
+                } else {
+                    alert.setAlertType(Alert.AlertType.INFORMATION);
+                    alert.setHeaderText("Success");
+                    alert.setContentText("The file has been replaced successfully!");
+                    alert.showAndWait();
+                }
+            }
+        }
+    }
+
     private LoadFileTask getLoadFileTask(File binfile) throws IOException {
         LoadFileTask lft = new LoadFileTask(binfile.getAbsolutePath(), this.mainApp);
         lft.setOnSucceeded(event -> {
@@ -184,6 +248,8 @@ public class MainView {
             rootButton.setDisable(false);
             fileBrowser.setDisable(false);
             actionFlow.setDisable(false);
+            replaceButton.setDisable(false);
+            saveBinButton.setDisable(false);
             this.Reload();
             locationLabel.setText("Path: \\");
         });
@@ -226,7 +292,7 @@ public class MainView {
                 public void run() {
                     Platform.runLater(() -> locationLabel.setText(mainApp.waitText + "\n" + mainApp.progress));
                 }
-            }, 50, 100);
+            }, 50, 50);
         });
         eat.setOnSucceeded(event -> {
             timer.cancel();

@@ -22,11 +22,11 @@
                               <FlowPane fx:id="actionFlow" alignment="CENTER" hgap="10.0" prefHeight="158.0" prefWidth="136.0" vgap="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                  <children>
                                      <Button mnemonicParsing="false" onAction="#OpenBin" prefHeight="24.0" prefWidth="113.0" text="Open BIN" />
-                                     <Button fx:id="saveBinButton" disable="true" mnemonicParsing="false" prefHeight="24.0" prefWidth="113.0" text="Save BIN" />
+                                     <Button fx:id="saveBinButton" disable="true" mnemonicParsing="false" onAction="#SaveBin" prefHeight="24.0" prefWidth="113.0" text="Save BIN" />
                                     <Button fx:id="extractAllButton" disable="true" mnemonicParsing="false" onAction="#ExtractAll" prefHeight="24.0" prefWidth="113.0" text="Extract all" />
                                     <Button fx:id="extractFileButton" disable="true" mnemonicParsing="false" onAction="#SaveFile" prefHeight="24.0" prefWidth="113.0" text="Extract file" />
                                     <Button fx:id="renameButton" disable="true" mnemonicParsing="false" onAction="#RenameFile" prefHeight="24.0" prefWidth="113.0" text="Rename" />
-                                    <Button fx:id="replaceButton" disable="true" mnemonicParsing="false" prefHeight="24.0" prefWidth="113.0" text="Replace" />
+                                    <Button fx:id="replaceButton" disable="true" mnemonicParsing="false" onAction="#ReplaceFile" prefHeight="24.0" prefWidth="113.0" text="Replace" />
                                     <Button fx:id="sepStreamButton" disable="true" mnemonicParsing="false" onAction="#SeparateStreams" prefHeight="24.0" prefWidth="113.0" text="Sep. streams" />
                                     <Button fx:id="rootButton" disable="true" mnemonicParsing="false" onAction="#ReloadRoot" prefHeight="24.0" prefWidth="113.0" text="Root" />
                                  </children>

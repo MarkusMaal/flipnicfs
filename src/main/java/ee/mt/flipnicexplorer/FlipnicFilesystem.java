@@ -284,6 +284,78 @@ public class FlipnicFilesystem {
         return audioStreams;
     }
 
+    public boolean OverwriteFile(String ffsName, File source) throws IOException {
+        Long offset = this.fileTable.get(ffsName);
+        long size = 0L;
+        String nextFile = "";
+        for (String ffsFile: this.fileTable.keySet()) {
+            if (nextFile.equals("EOF")) {
+                nextFile = ffsFile;
+                size = this.fileTable.get(nextFile) - offset;
+                break;
+            } else if (ffsFile.equals(ffsName)) {
+                nextFile = "EOF";
+            }
+        }
+        if (nextFile.equals("EOF")) {
+            size =  this.memory.length - offset;
+        }
+        if (source.length() > size) {
+            return false;
+        }
+        this.WriteBytes(new byte[(int)size], offset);
+        this.WriteBytes(Files.readAllBytes(source.toPath()), offset);
+        return true;
+    }
+
+    public boolean OverwriteFolderFile(String ffsName, String folder, File source) throws IOException {
+        Long offset = this.fileTable.get(folder);
+        long size = 0L;
+        String nextFile = "";
+        for (String ffsFile: this.fileTable.keySet()) {
+            if (nextFile.equals("EOF")) {
+                nextFile = ffsFile;
+                size = this.fileTable.get(nextFile) - offset;
+                break;
+            } else if (ffsFile.equals(folder)) {
+                nextFile = "EOF";
+            }
+        }
+        if (nextFile.equals("EOF")) {
+            size =  this.memory.length - offset;
+        }
+        if (source.length() > size) {
+            return false;
+        }
+        HashMap<String, Long> folderEntries = this.GetFolderTOCbyData(this.GetFile(folder));
+        long fileSize = 0L;
+        long fakeOffset = folderEntries.get(ffsName);
+        nextFile = "";
+        for (String ffsFile: folderEntries.keySet()) {
+            if (nextFile.equals("EOF")) {
+                nextFile = ffsFile;
+                fileSize = folderEntries.get(nextFile) - fakeOffset;
+                break;
+            } else if (ffsFile.equals(folder)) {
+                nextFile = "EOF";
+            }
+        }
+        if (nextFile.equals("EOF")) {
+            fileSize =  this.GetSize(folder) - offset;
+        }
+        if (source.length() > fileSize) {
+            return false;
+        }
+        offset += fakeOffset;
+        this.WriteBytes(new byte[(int)fileSize], offset);
+        this.WriteBytes(Files.readAllBytes(source.toPath()), offset);
+        return true;
+    }
+
+    public void ExportBin(File output) throws IOException {
+        Files.write(output.toPath(), this.memory);
+    }
+
     public String GetNiceFileType(String fileName) {
         if (fileName.endsWith("\\")) {
             return "Folder";
