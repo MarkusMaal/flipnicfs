@@ -1,4 +1,7 @@
 # FlipnicFS
+
+**DEPRECATED**: This project has been replaced by [FlipnicFileTools GUI](https://github.com/MarkusMaal/FlipnicFileTools)
+
 A graphical filesystem editor for Flipnic (PS2) blob files!
 
 ![FlipnicFS screenshot](https://github.com/MarkusMaal/flipnicfs/assets/45605071/5496b30d-5e0b-4c15-a264-a97c39cdf691)
